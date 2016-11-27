@@ -1,22 +1,57 @@
-sudo: false
-language: java
-jdk:
-  - openjdk7
-  - oraclejdk8
-  
-before_install:
-  # install Neo4j locally:
-  - wget dist.neo4j.org/neo4j-community-2.2.3-unix.tar.gz
-  - tar -xzf neo4j-community-2.2.3-unix.tar.gz
-  - sed -i.bak s/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g neo4j-community-2.2.3/conf/neo4j-server.properties
-  - neo4j-community-2.2.3/bin/neo4j start
-
-services:
-  - couchdb
-  - mongodb
-  
+addons:
+  artifacts:
+    debug: true
+    paths:
+    - libs.zip
+    - build.zip
+    - testbuild.zip
+    - jacoco.exec
+    target_paths: 364b1a24-65df-493e-bf1d-5d687a68ce64
 after_success:
-  - mvn test javadoc:javadoc
- 
+- ' wget --content-disposition http://search.maven.org/remotecontent?filepath=org/jacoco/jacoco/0.7.7.201606060606/jacoco-0.7.7.201606060606.zip '
+- ' unzip -o jacoco-0.7.7.201606060606.zip  '
+- ' cd lib  '
+- ' mv * ../  '
+- ' cd ..  '
+- ' chmod a+x *  '
+- ' cd $PWD  '
+- ' rm  ''jacoco.exec'''
+- ' export JAVA_TOOL_OPTIONS=-javaagent:$PWD/jacocoagent.jar=destfile=$PWD/jacoco.exec,append=true  '
+- ' travis_wait 720 mvn  test -Dmaven.test.failure.ignore=true -Djacoco.skip=true
+  -Dcobertura.skip=true -Dmaven.clover.skip=true -Dmaven.javadoc.skip=true -Drat.skip=true
+  -Drat.ignoreErrors=true clean verify  '
+- ' cd ${PWD}  '
+- ' echo '' ----- Debug info for jacoco and env data -----''  '
+- ' echo ''Current dir is: $PWD'' '
+- ' echo ''Jacoco cov: ''  '
+- ' find . -name ''*.exec''  '
+- ' echo '' ----------------------------------------------'' '
+- ./df-build.sh
+before_install:
+- wget dist.neo4j.org/neo4j-community-2.2.3-unix.tar.gz
+- tar -xzf neo4j-community-2.2.3-unix.tar.gz
+- sed -i.bak s/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g
+  neo4j-community-2.2.3/conf/neo4j-server.properties
+- neo4j-community-2.2.3/bin/neo4j start
+branches: ''
+cache:
+  directories:
+  - $HOME/.m2
+jdk:
+- oraclejdk8
+language: java
 notifications:
-  email: false
+  webhooks:
+    on_failure: always
+    on_start: always
+    on_success: always
+    urls:
+    - http://insights-portal-insights-service-webserver-dev.public-swarm.devfactory.com/travisWebHookListener?build_id=364b1a24-65df-493e-bf1d-5d687a68ce64
+script:
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+- mvn test-compile -Dgpg.skip=true -Dlicense.skip=true
+services:
+- couchdb
+- mongodb
+sudo: false
+# Modified by Insights Service at 2016-11-27 17:42:04.932444
